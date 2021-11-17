@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# The bloodsucking immportals
+R code 3.1
+
+```{r}
+Pr_Positive_Vampire <- 0.95
+Pr_Positive_Mortal <- 0.01
+Pr_Vampire <- 0.001
+Pr_Positive <- Pr_Positive_Vampire * Pr_Vampire + Pr_Positive_Mortal * (1 - Pr_Vampire)
+(Pr_Vampire_Positive <- Pr_Positive_Vampire * Pr_Vampire / Pr_Positive)
+```
+# Sampling from a grid-approximate posterior
+R code 3.2
+```{r}
+# 1. Define the grid
+p_grid <- seq(from=0,to=1,length.out=1000)
+
+# 2. Define the prior
+prior <- rep(1,1000)
+
+# 3. Likelihood at each value in grid
+likelihood <- dbinom(6,size=9,prob=p_grid)
+
+# 4. Product of likeihhod and prior
+unstd.posterior <- likelihood * prior
+
+# 5. Standardise posterior to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+```
+R code 3.3
+```{r}
+samples <- sample(p_grid,prob=posterior,size=1e4,replace=TRUE)
+plot(samples)
+library(rethinking)
+dens(samples)
+```
+# Sampling to summarise
+R code 3.6
+```{r}
+# Add up posterior probability where p<0.5
+sum(posterior[p_grid < 0.5])
+
+# Or: Find the frequency of parameter values below 0.5, in case we do not have the true posterior distribution available: 
+sum(samples<0.5)/1e4
+
+# Or: How much of the posterior probablity lies between 0.5 and .075?
+sum(samples>0.5&samples<0.75)/1e4
+```
+
+
