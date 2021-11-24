@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Rethinking Chapter 3"
 output: html_notebook
 ---
 # The bloodsucking immportals
@@ -24,7 +24,7 @@ prior <- rep(1,1000)
 # 3. Likelihood at each value in grid
 likelihood <- dbinom(6,size=9,prob=p_grid)
 
-# 4. Product of likeihhod and prior
+# 4. Product of likelihood and prior
 unstd.posterior <- likelihood * prior
 
 # 5. Standardise posterior to 1
@@ -48,6 +48,87 @@ sum(samples<0.5)/1e4
 
 # Or: How much of the posterior probablity lies between 0.5 and .075?
 sum(samples>0.5&samples<0.75)/1e4
+
+# Where does the 80th percentile lie?
+quantile(samples, 0.8)
+
+# And the middle 80% interval (10th - 90th percentile)?
+quantile(samples, c(0.1, 0.9))
 ```
+- Percentile Intervals (PI) work well to communicate the shape of a distribution, as long as the distribution is not too asymmetrical.
+- If you want an interval that best represents the paramters values most consistent with the data, the Highest Posterior Density Interval (HPDI) helps.
+- HPDI are more sensitive to simulation variance (how many samples drawn from the posterior).
+
+# Example of a posterior that is asymatrical
+R code 3.11
+```{r}
+# Grid approximation 
+p_grid <- seq(from=0,to=1,length.out=1000)
+prior <- rep(1,1000)
+likelihood <- dbinom(3,size=3,prob=p_grid)
+posterior <- likelihood * prior
+posterior <- posterior / sum(posterior)
+samples_asym <- sample(p_grid,size=1e4,replace=TRUE,prob=posterior)
+
+# Show 50% percentile compatibility
+library(rethinking)
+PI(samples_asym, prob=0.5)
+HPDI(samples_asym, prob=0.5)
+```
+# Point Estimates
+R code 3.14
+```{r}
+p_grid[which.max(posterior)]
+chainmode(samples,adj=0.01)
+mean(samples)
+median(samples)
+```
+- Possible point estimates:
+1. Maximum a posteriori (MAP) or Mode (if sampled from Posterior)
+2. Mean
+3. Median
+- A way to go beyond using the entire posterior as the estimate is to choose a loss function. 
+**A loss function is a rule that tells you the cost associated with using any particular point estimate.** 
+- Different loss functions imply different point estimates.
+- To decide upson a point estimate we need to define a loss function. 
+- Common loss functions: 
+1. Absolute loss (d-p), which leads to the median as point estimate.
+2. Quadratic loss (d-p)^2, which leads to the posterior mean.
+
+## Example on how to use a loss function to find a point estimate:
+```{r}
+# Compute the weighted averaged loss, where each loss is weighted by its corresponding posterior probability.
+sum(posterior*abs(0.5 - p_grid))
+# Repeating the calculation for every possible decision:
+loss <- sapply(p_grid, function(d) sum(posterior*abs(d - p_grid)))
+# The symbol loss contains a list of loss values, one for each possible decision, corresponding the values in p_grid. Now, we need to find the one value that minimises the loss function:
+p_grid[which.min(loss)]
+# The result is the actual posterior median, the parameter value that splits the posterior density such that half of the mass is above it and half below it.
+```
+# Sampling to simulate prediction
+R code 3.20
+- Given a realised observation, the likelihood function says how plausible the observation is.
+- Given only the parameters, the likelihood defines a distribution of possible observation that we can sample from, to simulate observation.
+- Bayesian models are **generative**, capable of simulating predictions. 
+## Example from the globe tossing experiment, using a binominal likelihood to obtain "dummy data".
+```{r}
+dbinom(0:2, size=2, prob=0.7)
+# Simulating observation by sampling from the distribution
+rbinom(10,size=2,prob=0.7)
+# Let's create 100.000 observations, and count:
+dummy_w <- rbinom(1e5, size=2, prob=0.7)
+table(dummy_w)/1e5
+# Increase to 9 tosses
+dummy_w <- rbinom(1e5, size=9, prob=0.7)
+simplehist(dummy_w, xlab="dummy water count")
+
+
+```
+# Model checking
+- Ensuring the model fitting worked correctly and evaluting the adequacy of a model for some purpose.
+- Observation uncertainty: Even if you know *p* with certainty, you won't know the next globe toss with certainty (except of p is 0 or 1).
+- Uncertainty about *p*: 
+
+
 
 
