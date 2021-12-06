@@ -36,3 +36,46 @@ R-Code 4.5
 log.big <-replicate(10000,log(prod(1+runif(12,0,0.5))))
 dens(log.big,norm.comp=TRUE)
 ```
+# From model definition to Bayes' theorem
+R-Code 4.6
+```{r}
+w <- 6; n <- 9;
+p_grid <- seq(from=0,to=1,length.out=100)
+posterior <- dbinom(w,n,p_grid)*dunif(p_grid,0,1)
+posterior <- posterior/sum(posterior)
+```
+
+# Gaussian model of height
+## Get the test data
+R-code 4.7
+```{r}
+library(rethinking)
+data(Howell1)
+d <- Howell1
+
+str(d) # Inspects the structure of the data frame
+precis(d,hist=FALSE)
+
+d$height # Extracts the height as R vector
+
+d2 <- d[ d$age >= 18, ] # Extract individuals of age 18 or greater
+
+precis(d2,hist=FALSE)
+
+dens(d$height) # Plot the distribution of heights
+
+curve(dnorm(x, 187, 20), from=100, to=250) # Plot prior for mu
+curve(dunif(x, 0, 50), from =-10, to=60) # Plot prior for sigma
+
+# And now sample from prior to simulate heights
+sample_mu <- rnorm(1e4, 187, 20)
+sample_sigma <- runif(1e4, 0, 50)
+prior_h <- rnorm(1e4, sample_mu, sample_sigma)
+dens(prior_h)
+
+# And now with a prior that is much flatter and less informative prior
+sample_mu <- rnorm(1e4, 187, 100)
+prior_h <- rnorm(1e4, sample_mu, sample_sigma)
+dens(prior_h)
+```
+
